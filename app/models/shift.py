@@ -1,5 +1,4 @@
 from pydantic import BaseModel, Field, validator
-
 from app.models.time import Time
 from app.models.user import User
 
@@ -11,6 +10,7 @@ class BaseShift(BaseModel):
     month:int
     year:int
     shift_start_time:Time
+    shift_end_time:Time
 
     @validator("day")
     @classmethod
@@ -34,6 +34,6 @@ class BaseShift(BaseModel):
         return value
     
 morning_shift = BaseShift(shift_manager=User(user_name="emma199", email="emma2199@gmail.com", password="1234"), 
-                          day = 21, month = 2, year = 2025, shift_start_time= Time(20, 0))
+                          day = 21, month = 2, year = 2025, shift_start_time= Time(hour=8, minute=0), shift_end_time= Time(hour=17, minute=30))
 
 print(morning_shift)
