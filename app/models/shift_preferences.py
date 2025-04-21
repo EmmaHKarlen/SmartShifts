@@ -2,7 +2,7 @@ from enum import Enum
 from typing import List
 from pydantic import BaseModel
 
-from app.models.time_models import ShiftDate, ShiftTime
+from app.models.time_models import ShiftDate
 
 class ShiftType(Enum):
     day = "day"
