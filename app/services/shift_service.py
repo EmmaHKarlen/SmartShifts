@@ -14,7 +14,7 @@ scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/au
 
 # Authorize the client using the credentials JSON file
 credentials = ServiceAccountCredentials.from_json_keyfile_name(
-    'c:/Users/User/Desktop/smartShifts/SmartShifts/app/credentials.json', 
+    'c:/Users/User/Desktop/credentials.json', 
     scope
 )
 
