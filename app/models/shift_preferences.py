@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import List
 from pydantic import BaseModel
-
 from models.employee import Employee
 from models.time_models import ShiftDate
 

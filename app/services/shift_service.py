@@ -1,15 +1,17 @@
+from fastapi import HTTPException
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
+from datetime import datetime, timedelta
 import sys
-
-sys.path.append('c:/Users/User/Desktop/smartShifts/SmartShifts/app')
-
 from models.employee import Employee
+from models.shift import WeekDayNightShift, WeekDayShift, WeekendShift
 from models.time_models import ShiftDate
 from models.shift_preferences import EmployeePreferences, Preference
 
+sys.path.append('c:/Users/User/Desktop/smartShifts/SmartShifts/app')
+
 MANAGER_SHEET_URL = "https://docs.google.com/spreadsheets/d/18uF9Q4RNBgvyM7OtA5AWHaPfbUGzFOGkbcIA_JxTbSs/edit?gid=0#gid=0"
+
 # Define the scope for accessing Google Sheets
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
@@ -28,7 +30,91 @@ class ShiftService:
 
     def create_monthly_shifts(self, month: int):
         self._create_employee_preference_dict(month)
-        print("Hi")
+        shifts = []
+        current_date = datetime(datetime.now().year, month, 1)
+
+        while current_date.month == month:
+            weekday = self._isr_weekday(current_date)
+            shift_date = ShiftDate(day=current_date.day, month=month, year=current_date.year)
+
+            # Weekday Shifts
+            if weekday < 5:
+                # Day Shift
+                try:
+                    day_shift = self._create_shift(shift_date, "Day", 3)
+                    shifts.append(day_shift)
+                except HTTPException as e:
+                    print(e.detail)
+
+            # Night Shift
+                try:
+                    night_shift = self._create_shift(shift_date, "Night", 2)
+                    shifts.append(night_shift)
+                except HTTPException as e:
+                    print(e.detail)
+
+            # Weekend Shifts
+            else:
+                try:
+                    weekend_shift = self._create_shift(shift_date, "Weekend", 2)
+                    shifts.append(weekend_shift)
+                except HTTPException as e:
+                    print(e.detail)
+
+            # Move to the next day
+            current_date += timedelta(days=1)
+
+        return shifts
+
+
+    def _create_shift(self, shift_date: ShiftDate, shift_type: str, num_employees: int):
+        selected_employees = []
+        for employee_name, preferences in self.employee_preferences_map.items():
+            for pref in preferences.preferences:
+                if pref.start_date == shift_date and pref.shift_type.value == shift_type and pref.availability:
+                    selected_employees.append(preferences.employee_obj)
+                    if len(selected_employees) >= num_employees:
+                        break
+            if len(selected_employees) >= num_employees:
+                break
+
+        if not selected_employees:
+        # Raise a 400 error if no employees are available for the shift
+            raise HTTPException(status_code = 400,
+                                detail = f"On the {shift_date.day}/{shift_date.month}/{shift_date.year}, the {shift_type} shift is missing a manager")
+
+        
+        # Create the shift object
+        if shift_type == "Day":
+            return WeekDayShift(
+            start_shift_date=shift_date,
+            end_shift_date=shift_date,
+            employees_list=selected_employees,
+            shift_manager=selected_employees[0] if selected_employees else None
+        )
+
+        elif shift_type == "Night":
+            return WeekDayNightShift(
+                start_shift_date=shift_date,
+                end_shift_date=shift_date,
+                employees_list=selected_employees,
+                shift_manager=selected_employees[0] if selected_employees else None,
+                standby_employee=selected_employees[1] if len(selected_employees) > 1 else None
+        )
+
+        elif shift_type == "Weekend":
+            return WeekendShift(
+                start_shift_date=shift_date,
+                end_shift_date=shift_date,
+                employees_list=selected_employees,
+                shift_manager=selected_employees[0] if selected_employees else None,
+                standby_employee=selected_employees[1] if len(selected_employees) > 1 else None
+        )
+
+
+    def _isr_weekday(self, date_obj):
+        default_weekday = date_obj.weekday()
+        return (default_weekday + 1) % 7
 
 
     def _create_employee_preference_dict(self, month: int):
@@ -75,6 +161,7 @@ class ShiftService:
         
         return employee_preferences
 
+
     def _parse_sheet_name_to_ints(self, sheet_name: str):
         parts = sheet_name.split(" ")
         if len(parts) == 2:
@@ -84,6 +171,7 @@ class ShiftService:
             return month, year
         else:
             raise ValueError("Sheet name format is invalid. Expected format: 'Month Year'.")
+
 
     def _get_preferences_from_data_table(self, data_table: list, sheet_name: str):
         preferences_list = []
