@@ -20,7 +20,7 @@ class BaseShift(BaseModel):
 
 class WeekDayShift(BaseShift):
     shift_start_time: ShiftTime = Field(default=ShiftTime(hour=8, minute=0))
-    shift_end_time: ShiftTime = Field(default=ShiftTime(hour=17, minute=30))
+    shift_end_time: ShiftTime = Field(default=ShiftTime(hour=17, minute=0))
     num_of_employees: int = 3
 
 
@@ -34,7 +34,7 @@ class WeekDayShift(BaseShift):
 
 class WeekDayNightShift(BaseShift):
     shift_start_time: ShiftTime = Field(default=ShiftTime(hour=17, minute=0))
-    shift_end_time: ShiftTime = Field(default=ShiftTime(hour=8, minute=30))
+    shift_end_time: ShiftTime = Field(default=ShiftTime(hour=8, minute=0))
     num_of_employees: int = 2
     standby_employee: Employee = Field(required=True)
 
@@ -49,7 +49,7 @@ class WeekDayNightShift(BaseShift):
 
 class WeekendShift(BaseShift):
     shift_start_time: ShiftTime = Field(default=ShiftTime(hour=9, minute=0))
-    shift_end_time: ShiftTime = Field(default=ShiftTime(hour=9, minute=30))
+    shift_end_time: ShiftTime = Field(default=ShiftTime(hour=9, minute=0))
     num_of_employees: int = 2
     standby_employee: Employee = Field(required=True)
 
@@ -57,7 +57,7 @@ class WeekendShift(BaseShift):
     def num_required_employees(self):
         return self.num_of_employees
     
-    
+
     def is_required_standby_employee(self):
         return True
 
